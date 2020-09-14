@@ -2,7 +2,7 @@ from flask import Flask, g, request, jsonify
 import multiprocessing
 from pool.RandomPool import RandomPool
 from pool.PriorityPool import PriorityPool
-from .utils import Exceptions
+from utils import Exceptions
 import configparser
 
 
@@ -15,7 +15,6 @@ if pool_type_cf["type"] not in ["random","priority"]:
     raise Exceptions.ParamsError("pool type must be random or priority")
 
 app = Flask(__name__)
-pool = init_pool()
 
 def init_pool():
     if pool_type_cf["type"] == "random":
@@ -41,6 +40,7 @@ def dec_weight():
 
 
 if __name__ == "__main__":
-    app.run(host="localhost", port=5000, threaded=True)
+    pool = init_pool()
+    app.run(host="0.0.0.0", port=5000, threaded=True)
 
 

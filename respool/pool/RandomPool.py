@@ -19,7 +19,7 @@ redis_cf = dict(cf.items('redis'))
 pool_type_cf = dict(cf.items('pool-type'))
 cooldown_cf = dict(cf.items('cooldown'))
 
-resource_path = "../resource.txt"
+resource_path = "./resource.txt"
 
 class RandomPool(object):
     def __init__(self, resource_path=resource_path, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, connect_timeout=None, 
@@ -36,15 +36,12 @@ class RandomPool(object):
         self.enable_cooldown = enable_cooldown or cooldown_cf["enable"]
         self.cooldown_time = cooldown_time or cooldown_cf["time"]
 
-        self._init_redis_client()
+        self.new_redis_client()
         self._load_resource_and_create_key()
 
 
-    def _init_redis_client(self):
-        connection_pool = redis.ConnectionPool(host=self.rhost, port=self.rport, username=self.rusername, password=self.rpassword,
-            socket_connect_timeout=self.connect_timeout, db=self.rdb, decode_responses=True)
-        self.rclient = redis.Redis(connection_pool=connection_pool)
-        self.cmd1 = self.rclient.register_script(grab_one_lua)
+    def new_redis_client(self):
+        self.rclient = redis.StrictRedis(host=self.rhost, port=self.rport, username=self.rusername, password=self.rpassword,db=self.rdb, decode_responses=True)
 
 
     def _load_resource_and_create_key(self):
@@ -61,6 +58,7 @@ class RandomPool(object):
 
 
     def grab_one(self):
+        self.new_redis_client()
         if self.enable_cooldown and self.cooldown_time:
             member = self.rclient.spop(self.key_name)
             new_member = eval(member)
@@ -73,6 +71,7 @@ class RandomPool(object):
         return res
 
     def refresh_cooldown_pool(self, interval=1):
+        self.new_redis_client()
         while True:
             now = int(time())
             sleep(interval)

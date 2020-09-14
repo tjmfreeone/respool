@@ -19,7 +19,7 @@ redis_cf = dict(cf.items('redis'))
 pool_type_cf = dict(cf.items('pool-type'))
 cooldown_cf = dict(cf.items('cooldown'))
 
-resource_path = "../resource.txt"
+resource_path = "./resource.txt"
 
 
 class PriorityPool(object):
@@ -31,19 +31,13 @@ class PriorityPool(object):
         self.rdb = rdb or redis_cf[ 'db']
         self.rusername = rusername or redis_cf[ 'username']
         self.rpassword = rpassword or redis_cf[ 'password']
-        self.connect_timeout = connect_timeout or redis_cf['connect_timeout']
 
-        self.enable_discard = enable_discard or discard_cf['enable']
-        self.discard_threshold = discard_threshold or discard_cf["threshold"]
-        self._init_redis_client()
+        self.new_redis_client()
         self._load_resource_and_create_key()
 
 
-    def _init_redis_client(self):
-        connection_pool = redis.ConnectionPool(host=self.rhost, port=self.rport, username=self.rusername, password=self.rpassword,
-            socket_connect_timeout=self.connect_timeout, db=self.rdb, decode_responses=True)
-        self.rclient = redis.Redis(connection_pool=connection_pool)
-        self.cmd1 = self.rclient.register_script(zpop)
+    def new_redis_client(self):
+        self.rclient = redis.StrictRedis(host=self.rhost, port=self.rport,db=self.rdb, decode_responses=True)
 
 
     def _load_resource_and_create_key(self):
@@ -54,25 +48,27 @@ class PriorityPool(object):
                 member = {
                         "res":line.strip(),
                         "score":100,
-                        "join_ts": int(time()),
                         }
-                if self.enable_discard:
-                    member["discard"] = False
-                self.rclient.zadd(self.key_name, 100, str(member))
+                self.rclient.zadd(self.key_name, {str(member):100})
                 self.total_weight += 100
-        logging.info("load {} objects to priority pool {}".format(self.rclient.scard(self.key_name), self.key_name))
+        logging.info("load {} objects to priority pool {}".format(self.rclient.zcard(self.key_name), self.key_name))
 
 
     def grab_one(self):
+        self.new_redis_client()
         rand_num = random.uniform(-0.01, self.total_weight)
         iter_weight = 0
         for member in self.rclient.zscan_iter(self.key_name):
-            iter_weight += eval(member[0])
+            print(member)
+            iter_weight += member[1]
+            if iter_weight >= rand_num:
+                return eval(member[0])
 
     def dec_weight(self, res):
+        self.new_redis_client()
         old_score = self.rclient.zscore(self.key_name, res)
         if not old_score:
             return {"mas":"fail"} 
-        self.rclient.zadd(self.key_name, old_score-1, res)
+        self.rclient.zadd(self.key_name, {res:old_score-1})
         self.total_weight -= 1
         return {"msg":"success"}
