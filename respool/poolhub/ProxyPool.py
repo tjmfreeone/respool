@@ -3,9 +3,8 @@ import configparser
 import os
 import logging
 import random
-
 from singleton import singleton
-from config import config
+
 from time import time,sleep
 
 
@@ -14,19 +13,26 @@ logging.basicConfig(level=logging.INFO,
                     datefmt = '[%Y-%m-%d  %H:%M:%S]'
                     )
 
+cf = configparser.ConfigParser()
+cf.read("./config.ini")
+
+redis_cf = dict(cf.items('redis'))
+pool_type_cf = dict(cf.items('pool-type'))
+cooldown_cf = dict(cf.items('cooldown'))
+init_score_cf = dict(cf.items('init-score'))
 
 resource_path = "./resource.txt"
 
 @singleton
 class PriorityPool(object):
     def __init__(self, resource_path=resource_path, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, connect_timeout=None):
-        
+
         self.resource_path = resource_path
-        self.rhost = rhost or config.REDIS_HOST
-        self.rport = rport or config.REDIS_PORT
-        self.rdb = rdb or config.REDIS_DB
-        self.rusername = rusername or config.REDIS_USERNAME
-        self.rpassword = rpassword or config.REDIS_PASSWORD
+        self.rhost = rhost or redis_cf['host']
+        self.rport = rport or redis_cf[ 'port']
+        self.rdb = rdb or redis_cf[ 'db']
+        self.rusername = rusername or redis_cf[ 'username']
+        self.rpassword = rpassword or redis_cf[ 'password']
 
         self.new_redis_client()
         self._load_resource_and_create_key()
@@ -42,8 +48,8 @@ class PriorityPool(object):
         with open(self.resource_path, mode="r") as f:
             for line in f:
                 member = line.strip()
-                self.rclient.zadd(self.key_name, {str(member):config.PRIORITY_INIT_SCORE})
-                self.total_weight += config.PRIORITY_INIT_SCORE
+                self.rclient.zadd(self.key_name, {str(member):init_score_cf["score"]})
+                self.total_weight += eval(init_score_cf["score"])
         logging.info("load {} objects to priority pool {}".format(self.rclient.zcard(self.key_name), self.key_name))
 
 

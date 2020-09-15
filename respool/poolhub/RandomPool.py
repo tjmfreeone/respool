@@ -1,23 +1,15 @@
 import redis
-import configparser
 import os
 import logging
 import random
 from singleton import singleton  
 from time import time,sleep
-
+from config import config
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(message)s",
                     datefmt = '[%Y-%m-%d  %H:%M:%S]'
                     )
-
-cf = configparser.ConfigParser()
-cf.read("./config.ini")
-
-redis_cf = dict(cf.items('redis'))
-pool_type_cf = dict(cf.items('pool-type'))
-cooldown_cf = dict(cf.items('cooldown'))
 
 resource_path = "./resource.txt"
 
@@ -27,15 +19,15 @@ class RandomPool(object):
                 enable_cooldown=None, cooldown_time=None, refresh_interval=None):
 
         self.resource_path = resource_path
-        self.rhost = rhost or redis_cf['host']
-        self.rport = rport or redis_cf[ 'port']
-        self.rdb = rdb or redis_cf[ 'db']
-        self.rusername = rusername or redis_cf[ 'username']
-        self.rpassword = rpassword or redis_cf[ 'password']
+        self.rhost = rhost or config.REDIS_HOST
+        self.rport = rport or config.REDIS_PORT
+        self.rdb = rdb or config.REDIS_DB
+        self.rusername = rusername or config.REDIS_USERNAME
+        self.rpassword = rpassword or config.REDIS_PASSWORD
 
-        self.enable_cooldown = enable_cooldown or cooldown_cf["enable"]
-        self.cooldown_time = cooldown_time or eval(cooldown_cf["time"])
-        self.refresh_interval = refresh_interval or eval(cooldown_cf["refresh_interval"])
+        self.enable_cooldown = enable_cooldown or config.COOLDOWN_ENABLE
+        self.cooldown_time = cooldown_time or config.COOLDOWN_TIME
+        self.refresh_interval = refresh_interval or config.REFRESH_INTERVAL
 
         self.new_redis_client()
         self._load_resource_and_create_key()

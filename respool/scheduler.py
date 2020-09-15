@@ -1,19 +1,12 @@
 import time
 import multiprocessing
 import logging
-import configparser
+from config import config
 
 from server import app, get_pool_instance
 from poolhub.RandomPool import RandomPool
 from poolhub.PriorityPool import PriorityPool
 
-cf = configparser.ConfigParser()
-cf.read("./config.ini")
-
-
-pool_type_cf = dict(cf.items('pool-type'))
-cooldown_cf = dict(cf.items('cooldown'))
-redis_cf = dict(cf.items("redis"))
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(message)s",
@@ -22,25 +15,28 @@ logging.basicConfig(level=logging.INFO,
 
 class Scheduler():
     def __init__(self):
-        self.pool = get_pool_instance()
+        self.pool_instances = get_pool_instance()
+
     def run_server(self):
         app.run(host="0.0.0.0", port=5000, threaded=True)
 
-
     def refresh_random_cooldown_pool(self):
-        self.pool.refresh_cooldown_pool()
-
+        self.pool_instances["random"].refresh_cooldown_pool()
 
     def run(self):
         try:
             logging.info("respool startup...")
-            logging.info("init a new {} pool".format(pool_type_cf["type"]))
+            if not self.pool_instances:
+                logging.info("No pool were enabled...")
+                return
+            for k in self.pool_instances.keys():
+                logging.info("init a new {} pool".format(k))
 
             server_process = multiprocessing.Process(target=self.run_server)
             logging.info("server startup...")
             server_process.start()
 
-            if pool_type_cf["type"] == "random" and cooldown_cf["enable"]:
+            if "random" in self.pool_instances and config.COOLDOWN_ENABLE   :
                 refresh_process = multiprocessing.Process(target=self.refresh_random_cooldown_pool)
                 logging.info("cooldown pool startup...")
                 refresh_process.start()
@@ -59,7 +55,7 @@ class Scheduler():
 
         finally:
             logging.info("respool process terminated")
-            if redis_cf["clear_when_break"]:
-                self.pool.clear_pool()
+            if config.CLEAR_WHEN_BREAK:
+                self.pool_instances["random"].clear_pool()
 
 
