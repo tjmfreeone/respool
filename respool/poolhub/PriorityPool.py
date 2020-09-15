@@ -3,6 +3,7 @@ import configparser
 import os
 import logging
 import random
+from singleton import singleton
 
 from time import time,sleep
 
@@ -18,10 +19,11 @@ cf.read("./config.ini")
 redis_cf = dict(cf.items('redis'))
 pool_type_cf = dict(cf.items('pool-type'))
 cooldown_cf = dict(cf.items('cooldown'))
+init_score_cf = dict(cf.items('init-score'))
 
 resource_path = "./resource.txt"
 
-
+@singleton
 class PriorityPool(object):
     def __init__(self, resource_path=resource_path, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, connect_timeout=None):
 
@@ -45,12 +47,9 @@ class PriorityPool(object):
         self.total_weight = 0
         with open(self.resource_path, mode="r") as f:
             for line in f:
-                member = {
-                        "res":line.strip(),
-                        "score":100,
-                        }
-                self.rclient.zadd(self.key_name, {str(member):100})
-                self.total_weight += 100
+                member = line.strip()
+                self.rclient.zadd(self.key_name, {str(member):init_score_cf["score"]})
+                self.total_weight += eval(init_score_cf["score"])
         logging.info("load {} objects to priority pool {}".format(self.rclient.zcard(self.key_name), self.key_name))
 
 
@@ -59,16 +58,16 @@ class PriorityPool(object):
         rand_num = random.uniform(-0.01, self.total_weight)
         iter_weight = 0
         for member in self.rclient.zscan_iter(self.key_name):
-            print(member)
             iter_weight += member[1]
             if iter_weight >= rand_num:
-                return eval(member[0])
+                return {"res":member[0], "score":member[1]}
+
 
     def dec_weight(self, res):
         self.new_redis_client()
         old_score = self.rclient.zscore(self.key_name, res)
         if not old_score:
-            return {"mas":"fail"} 
+            return {"msg":"fail"} 
         self.rclient.zadd(self.key_name, {res:old_score-1})
         self.total_weight -= 1
         return {"msg":"success"}

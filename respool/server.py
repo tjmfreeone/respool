@@ -1,7 +1,7 @@
 from flask import Flask, g, request, jsonify
 import multiprocessing
-from pool.RandomPool import RandomPool
-from pool.PriorityPool import PriorityPool
+from poolhub.RandomPool import RandomPool
+from poolhub.PriorityPool import PriorityPool
 from utils import Exceptions
 import configparser
 
@@ -26,15 +26,22 @@ def init_pool():
 
 @app.route('/random')
 def get_random_one():
+    if  pool_type_cf["type"] != "random":
+        return jsonify({"msg":"wrong url"})
+    pool = init_pool()
     return jsonify(pool.grab_one())
 
 
 @app.route('/priority')
 def get_priority_one():
+    if  pool_type_cf["type"] != "priority":
+        return jsonify({"msg":"wrong url"})
+    pool = init_pool()
     return jsonify(pool.grab_one())
 
 @app.route('/dec_weight')
 def dec_weight():
+    pool = init_pool()
     res = request.args.get('res')
     return jsonify(pool.dec_weight(res))
 
