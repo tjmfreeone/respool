@@ -10,4 +10,4 @@ respool是一个基于Flask, redis开发的，提供多种抽样策略的对象�
 python>=3.6、redis-py>=3.5.3、redis>=4.0.9
 
 ## 原理架构
-[!respool](https://github.com/taojinmin/MDimages/blob/master/respool-images/respool.jpg?raw=true)
+![respool](https://github.com/taojinmin/MDimages/blob/master/respool-images/respool.jpg?raw=true)
