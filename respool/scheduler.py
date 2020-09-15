@@ -3,8 +3,9 @@ import multiprocessing
 import logging
 import configparser
 
-from server import app
+from server import app, get_pool_instance
 from poolhub.RandomPool import RandomPool
+from poolhub.PriorityPool import PriorityPool
 
 cf = configparser.ConfigParser()
 cf.read("./config.ini")
@@ -12,6 +13,7 @@ cf.read("./config.ini")
 
 pool_type_cf = dict(cf.items('pool-type'))
 cooldown_cf = dict(cf.items('cooldown'))
+redis_cf = dict(cf.items("redis"))
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(message)s",
@@ -19,14 +21,14 @@ logging.basicConfig(level=logging.INFO,
                     )
 
 class Scheduler():
-
+    def __init__(self):
+        self.pool = get_pool_instance()
     def run_server(self):
         app.run(host="0.0.0.0", port=5000, threaded=True)
 
 
     def refresh_random_cooldown_pool(self):
-        pool = RandomPool()
-        pool.refresh_cooldown_pool()
+        self.pool.refresh_cooldown_pool()
 
 
     def run(self):
@@ -57,9 +59,7 @@ class Scheduler():
 
         finally:
             logging.info("respool process terminated")
-
-if __name__ == "__main__":
-    scheduler = Scheduler()
-    scheduler.run()
+            if redis_cf["clear_when_break"]:
+                self.pool.clear_pool()
 
 

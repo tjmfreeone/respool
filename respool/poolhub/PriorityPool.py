@@ -71,3 +71,8 @@ class PriorityPool(object):
         self.rclient.zadd(self.key_name, {res:old_score-1})
         self.total_weight -= 1
         return {"msg":"success"}
+
+
+    def clear_pool(self):
+        self.new_redis_client()
+        self.rclient.delete(self.key_name)

@@ -78,3 +78,8 @@ class RandomPool(object):
                     self.rclient.srem(self.cooldown_pool_name, member)
                     self.rclient.sadd(self.key_name, eval(member)["res"])
 
+    def clear_pool(self):
+        self.new_redis_client()
+        self.rclient.delete(self.key_name)
+        self.rclient.delete(self.cooldown_pool_name)
+

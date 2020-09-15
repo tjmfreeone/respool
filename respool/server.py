@@ -16,7 +16,7 @@ if pool_type_cf["type"] not in ["random","priority"]:
 
 app = Flask(__name__)
 
-def init_pool():
+def get_pool_instance():
     if pool_type_cf["type"] == "random":
         pool =  RandomPool()
     elif pool_type_cf["type"] == "priority":
@@ -28,7 +28,7 @@ def init_pool():
 def get_random_one():
     if  pool_type_cf["type"] != "random":
         return jsonify({"msg":"wrong url"})
-    pool = init_pool()
+    pool = get_pool_instance()
     return jsonify(pool.grab_one())
 
 
@@ -36,18 +36,12 @@ def get_random_one():
 def get_priority_one():
     if  pool_type_cf["type"] != "priority":
         return jsonify({"msg":"wrong url"})
-    pool = init_pool()
+    pool = get_pool_instance()
     return jsonify(pool.grab_one())
 
 @app.route('/dec_weight')
 def dec_weight():
-    pool = init_pool()
+    pool = get_pool_instance()
     res = request.args.get('res')
     return jsonify(pool.dec_weight(res))
-
-
-if __name__ == "__main__":
-    pool = init_pool()
-    app.run(host="0.0.0.0", port=5000, threaded=True)
-
 
