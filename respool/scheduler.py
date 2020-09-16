@@ -54,8 +54,9 @@ class Scheduler():
                 refresh_process.terminate()
 
         finally:
+            for k,v in self.pool_instances.items():
+                if eval("config.CLEAR_WHEN_BREAK_{}".format(k.upper())):
+                    v.clear_pool()
+                    logging.info("clear {} pool".format(k))
             logging.info("respool process terminated")
-            if config.CLEAR_WHEN_BREAK:
-                self.pool_instances["random"].clear_pool()
-
 

@@ -1,6 +1,8 @@
 from flask import Flask, g, request, jsonify
 from poolhub.RandomPool import RandomPool
 from poolhub.PriorityPool import PriorityPool
+from poolhub.ProxyPool import ProxyPool
+
 from utils import Exceptions
 from config import config
 
@@ -16,6 +18,9 @@ def get_pool_instance():
 
     if config.ENABLE_PRIORITY_POOL:
         pool_instances["priority"] = PriorityPool()
+
+    if config.ENABLE_PROXY_POOL:
+        pool_instances["proxy"] = ProxyPool()
     return pool_instances
 
 
@@ -42,3 +47,9 @@ def dec_weight():
     res = request.args.get('res')
     return jsonify(pool_instances["priority"].dec_weight(res))
 
+@app.route('/proxy')
+def get_proxy_one():
+    pool_instances = get_pool_instance()
+    if "proxy" not in pool_instances:
+        return jsonify({"msg":"proxy pool does not enable"})
+    return jsonify(pool_instances["proxy"].grab_one())

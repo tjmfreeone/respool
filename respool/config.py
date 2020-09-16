@@ -12,7 +12,6 @@ class Config():
         self.REDIS_USERNAME = eval(redis_cf["username"])
         self.REDIS_PASSWORD = eval(redis_cf["password"])
         self.CONNECT_TIMEOUT= eval(redis_cf["connect_timeout"])
-        self.CLEAR_WHEN_BREAK = eval(redis_cf["clear_when_break"])
 
 
         switch_cf = dict(cf.items("pool-switch"))
@@ -25,10 +24,11 @@ class Config():
         self.COOLDOWN_ENABLE = eval(random_cf["cooldown_enable"])
         self.COOLDOWN_TIME = eval(random_cf["cooldown_time"])
         self.REFRESH_INTERVAL = eval(random_cf["refresh_interval"])
-
+        self.CLEAR_WHEN_BREAK_RANDOM = eval(random_cf["clear_when_break"])
 
         priority_cf = dict(cf.items("PriorityPool"))
         self.PRIORITY_INIT_SCORE = eval(priority_cf["init_score"])
+        self.CLEAR_WHEN_BREAK_PRIORITY = eval(priority_cf["clear_when_break"])
 
 
         proxy_cf = dict(cf.items("ProxyPool"))
@@ -36,6 +36,7 @@ class Config():
         self.CAPACITY = eval(proxy_cf["capacity"])
         self.PROXY_SOURCE = proxy_cf["proxy_source"]
         self.AUTO_SUPPLEMENT = eval(proxy_cf["auto_supplement"])
+        self.CLEAR_WHEN_BREAK_PROXY = eval(proxy_cf["clear_when_break"])
 
 config = Config()
 config.load_config()
