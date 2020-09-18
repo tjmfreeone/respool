@@ -19,7 +19,8 @@ resource_path = "./resource.txt"
 
 @singleton
 class PriorityPool(object):
-    def __init__(self, resource_path=resource_path, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, connect_timeout=None):
+    def __init__(self, resource_path=resource_path, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, 
+            connect_timeout=None, reload_resource=None):
         
         self.resource_path = resource_path
         self.rhost = rhost or config.REDIS_HOST
@@ -27,6 +28,7 @@ class PriorityPool(object):
         self.rdb = rdb or config.REDIS_DB
         self.rusername = rusername or config.REDIS_USERNAME
         self.rpassword = rpassword or config.REDIS_PASSWORD
+        self.reload_resource = reload_resource or config.RELOAD_RESOURCE_PRIORITY
 
         self.new_redis_client()
         self._load_resource_and_create_key()
@@ -39,6 +41,10 @@ class PriorityPool(object):
     def _load_resource_and_create_key(self):
         self.key_name = "priority_respool_main"   # sortedset
         self.total_weight = 0
+        if not self.reload_resource and self.key_name in self.rclient.keys():
+            for member in self.rclient.zscan_iter(self.key_name):    # 重新获取所有资源的总权重
+                self.total_weight += member[1]
+            return 
         with open(self.resource_path, mode="r") as f:
             for line in f:
                 member = line.strip()
@@ -66,6 +72,9 @@ class PriorityPool(object):
         self.total_weight -= 1
         return {"msg":"success"}
 
+    def pool_size(self):
+        self.new_redis_client()
+        return {"pool_size": self.rclient.zcard(self.key_name)}
 
     def clear_pool(self):
         self.new_redis_client()

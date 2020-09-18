@@ -16,7 +16,7 @@ resource_path = "./resource.txt"
 @singleton
 class RandomPool(object):
     def __init__(self, resource_path=resource_path, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, connect_timeout=None, 
-                enable_cooldown=None, cooldown_time=None, refresh_interval=None):
+                enable_cooldown=None, cooldown_time=None, refresh_interval=None, reload_resource=None):
 
         self.resource_path = resource_path
         self.rhost = rhost or config.REDIS_HOST
@@ -28,6 +28,7 @@ class RandomPool(object):
         self.enable_cooldown = enable_cooldown or config.COOLDOWN_ENABLE
         self.cooldown_time = cooldown_time or config.COOLDOWN_TIME
         self.refresh_interval = refresh_interval or config.REFRESH_INTERVAL
+        self.reload_resource = reload_resource or config.RELOAD_RESOURCE_RANDOM
 
         self.new_redis_client()
         self._load_resource_and_create_key()
@@ -40,6 +41,8 @@ class RandomPool(object):
     def _load_resource_and_create_key(self):
         self.key_name = "random_respool_main"    #set
         self.cooldown_pool_name = "random_cooldown_pool"  #set
+        if not self.reload_resource:
+            return 
         with open(self.resource_path, mode='r') as f:
             for line in f:
                 member = line.strip()
@@ -66,9 +69,13 @@ class RandomPool(object):
             now = int(time())
             sleep(self.refresh_interval)
             for member in self.rclient.smembers(self.cooldown_pool_name):
-                if now >= eval(member)["join_ts"]:
+                if now >= eval(member)["join_ts"] + self.cooldown_time:
                     self.rclient.srem(self.cooldown_pool_name, member)
                     self.rclient.sadd(self.key_name, eval(member)["res"])
+
+    def pool_size(self):
+        self.new_redis_client()
+        return {"pool_size": self.rclient.scard(self.key_name)}
 
     def clear_pool(self):
         self.new_redis_client()

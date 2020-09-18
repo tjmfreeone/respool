@@ -39,6 +39,7 @@ def get_priority_one():
         return jsonify({"msg":"priority pool does not enable"})
     return jsonify(pool_instances["priority"].grab_one())
 
+
 @app.route('/dec_weight')
 def dec_weight():
     pool_instances = get_pool_instance()
@@ -47,9 +48,28 @@ def dec_weight():
     res = request.args.get('res')
     return jsonify(pool_instances["priority"].dec_weight(res))
 
+
+@app.route('/dec_proxy_weight')
+def dec_proxy_weight():
+    pool_instances = get_pool_instance()
+    if "proxy" not in pool_instances:
+        return jsonify({"msg":"proxy pool does not enable"})
+    res = request.args.get('res')
+    return jsonify(pool_instances["proxy"].dec_proxy_weight(res))
+
+
 @app.route('/proxy')
 def get_proxy_one():
     pool_instances = get_pool_instance()
     if "proxy" not in pool_instances:
         return jsonify({"msg":"proxy pool does not enable"})
     return jsonify(pool_instances["proxy"].grab_one())
+
+@app.route('/pool_size')
+def get_pool_size():
+    pool_instances = get_pool_instance()
+    pool_type = request.args.get('type')
+    if pool_type not in pool_instances:
+        return jsonify({"msg":"No such a pool in redis's keys."})
+    return jsonify(pool_instances[pool_type].pool_size())
+

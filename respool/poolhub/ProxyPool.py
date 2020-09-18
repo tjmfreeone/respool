@@ -6,7 +6,6 @@ import requests
 from lxml import etree
 
 from singleton import singleton
-
 from config import config
 from time import time,sleep
 
@@ -17,16 +16,17 @@ logging.basicConfig(level=logging.INFO,
                     )
 
 
-
 @singleton
 class ProxyPool(object):
-    def __init__(self, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, connect_timeout=None):
+    def __init__(self, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, 
+            connect_timeout=None, auto_supply=None):
 
         self.rhost = rhost or config.REDIS_HOST
         self.rport = rport or config.REDIS_PORT
         self.rdb = rdb or config.REDIS_DB
         self.rusername = rusername or config.REDIS_USERNAME
         self.rpassword = rpassword or config.REDIS_PASSWORD
+        self.auto_supply = auto_supply or config.AUTO_SUPPLY
 
         self.proxy_source = {
                 "kuaidaili": kuaidaili(),
@@ -43,7 +43,7 @@ class ProxyPool(object):
     def supply(self):
         self.key_name = "proxy_respool_main"   # sortedset
         self.total_weight = 0
-        if self.key_name in self.rclient.keys():
+        if not self.auto_supply and self.key_name in self.rclient.keys():
             for member in self.rclient.zscan_iter(self.key_name):    # 重新获取所有代理的总权重
                 self.total_weight += member[1]
             return
@@ -66,7 +66,7 @@ class ProxyPool(object):
                         "score":member[1]}
 
 
-    def dec_weight(self, res):
+    def dec_proxy_weight(self, res):
         self.new_redis_client()
         old_score = self.rclient.zscore(self.key_name, res)
         if not old_score:
@@ -75,10 +75,14 @@ class ProxyPool(object):
         self.total_weight -= 1
         return {"msg":"success"}
 
+    def pool_size(self):
+        self.new_redis_client()
+        return {"pool_size": self.rclient.zcard(self.key_name)}
 
     def clear_pool(self):
         self.new_redis_client()
         self.rclient.delete(self.key_name)
+
 
 
 class kuaidaili():
@@ -100,6 +104,7 @@ class kuaidaili():
                 ip = proxy_tree.xpath('.//td[@data-title="IP"]/text()')[0]
                 port = proxy_tree.xpath('.//td[@data-title="PORT"]/text()')[0]
                 self.proxy_list.append(ip+":"+port) 
+            logging.info("supply working...")
             break
                 
     def keep_crawl_until_reach_capacity(self):
@@ -110,5 +115,4 @@ class kuaidaili():
                 break
             self.crawl_single_page(page)
             page += 1
-
 
