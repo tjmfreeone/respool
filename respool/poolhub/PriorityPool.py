@@ -15,14 +15,13 @@ logging.basicConfig(level=logging.INFO,
                     )
 
 
-resource_path = "./resource.txt"
 
 @singleton
 class PriorityPool(object):
-    def __init__(self, resource_path=resource_path, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, 
+    def __init__(self, resource_path=None, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, 
             connect_timeout=None, reload_resource=None):
         
-        self.resource_path = resource_path
+        self.resource_path = config.PRIORITY_FILE_PATH or resource_path
         self.rhost = rhost or config.REDIS_HOST
         self.rport = rport or config.REDIS_PORT
         self.rdb = rdb or config.REDIS_DB
@@ -68,8 +67,21 @@ class PriorityPool(object):
         old_score = self.rclient.zscore(self.key_name, res)
         if not old_score:
             return {"msg":"fail"} 
+        if old_score == config.MIN_SCORE:
+            return {"msg":"res has been has reached a minimum"}
         self.rclient.zadd(self.key_name, {res:old_score-1})
         self.total_weight -= 1
+        return {"msg":"success"}
+
+    def inc_weight(self, res):
+        self.new_redis_client()
+        old_score = self.rclient.zscore(self.key_name, res)
+        if not old_score:
+            return {"msg":"fail"}
+        if old_score == config.MAX_SCORE:
+            return {"msg":"res has been has reached a maximum"}
+        self.rclient.zadd(self.key_name, {res:old_score+1})
+        self.total_weight += 1
         return {"msg":"success"}
 
     def pool_size(self):

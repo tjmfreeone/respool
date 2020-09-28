@@ -11,14 +11,12 @@ logging.basicConfig(level=logging.INFO,
                     datefmt = '[%Y-%m-%d  %H:%M:%S]'
                     )
 
-resource_path = "./resource.txt"
-
 @singleton
 class RandomPool(object):
-    def __init__(self, resource_path=resource_path, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, connect_timeout=None, 
+    def __init__(self, resource_path=None, rhost=None, rport=None, rusername=None, rpassword=None, rdb=None, connect_timeout=None, 
                 enable_cooldown=None, cooldown_time=None, refresh_interval=None, reload_resource=None):
 
-        self.resource_path = resource_path
+        self.resource_path = config.RANDOM_FILE_PATH or resource_path
         self.rhost = rhost or config.REDIS_HOST
         self.rport = rport or config.REDIS_PORT
         self.rdb = rdb or config.REDIS_DB

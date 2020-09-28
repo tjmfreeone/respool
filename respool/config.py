@@ -19,6 +19,7 @@ class Config():
         self.ENABLE_PROXY_POOL = eval(switch_cf["proxypool"])
 
         random_cf = dict(cf.items("RandomPool"))
+        self.RANDOM_FILE_PATH = random_cf["file_path"]
         self.COOLDOWN_ENABLE = eval(random_cf["cooldown_enable"])
         self.COOLDOWN_TIME = eval(random_cf["cooldown_time"])
         self.REFRESH_INTERVAL = eval(random_cf["refresh_interval"])
@@ -26,7 +27,10 @@ class Config():
         self.RELOAD_RESOURCE_RANDOM = eval(random_cf["reload_resource"])
 
         priority_cf = dict(cf.items("PriorityPool"))
+        self.PRIORITY_FILE_PATH = priority_cf["file_path"]
         self.PRIORITY_INIT_SCORE = eval(priority_cf["init_score"])
+        self.MIN_SCORE = eval(priority_cf["min_score"])
+        self.MAX_SCORE = eval(priority_cf["max_score"])
         self.CLEAR_WHEN_BREAK_PRIORITY = eval(priority_cf["clear_when_break"])
         self.RELOAD_RESOURCE_PRIORITY = eval(priority_cf["reload_resource"])
 

@@ -48,6 +48,13 @@ def dec_weight():
     res = request.args.get('res')
     return jsonify(pool_instances["priority"].dec_weight(res))
 
+@app.route('/inc_weight')
+def inc_weight():
+    pool_instances = get_pool_instance()
+    if "priority" not in pool_instances:
+        return jsonify({"msg":"priority pool does not enable"})
+    res = request.args.get('res')
+    return jsonify(pool_instances["priority"].inc_weight(res))
 
 @app.route('/dec_proxy_weight')
 def dec_proxy_weight():
